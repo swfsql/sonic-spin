@@ -2857,6 +2857,30 @@ pub mod parsing {
         }
     }
 
+    // modification of syn::path::parse_helper
+    fn parse_helper(input: ParseStream, expr_style: bool) -> Result<syn::Path> {
+        if input.peek(syn::Token![dyn]) {
+            return Err(input.error("expected path"));
+        }
+
+        Ok(syn::Path {
+            leading_colon: input.parse()?,
+            segments: {
+                let mut segments = syn::punctuated::Punctuated::new();
+                let value = syn::PathSegment::parse_helper(input, expr_style)?;
+                segments.push_value(value);
+                while input.peek(syn::Token![::])
+                    && !input.peek3(syn::token::Paren) {
+                    let punct: syn::Token![::] = input.parse()?;
+                    segments.push_punct(punct);
+                    let value = syn::PathSegment::parse_helper(input, expr_style)?;
+                    segments.push_value(value);
+                }
+                segments
+            },
+        })
+    }
+
     impl Parse for ExprPath {
         fn parse(input: ParseStream) -> Result<Self> {
             #[cfg(not(feature = "full"))]
@@ -2864,7 +2888,13 @@ pub mod parsing {
             #[cfg(feature = "full")]
             let attrs = input.call(syn::Attribute::parse_outer)?;
 
-            let (qself, path) = syn::path::parsing::qpath(input, true)?;
+            let (qself, path) = if !input.peek(syn::Token![<]) {
+                let path = parse_helper(input, true)?;
+                (None, path)
+            } else {
+                syn::path::parsing::qpath(input, true)?
+            };
+
 
             Ok(ExprPath {
                 attrs: attrs,
