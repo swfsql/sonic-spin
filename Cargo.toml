@@ -12,9 +12,9 @@ syn = { version = "=0.15.30", features = ["full", "printing"] }
 proc-macro2 = { version = "0.4.4", default-features = false }
 quote = "0.6.11"
 
-[patch.crates-io]
-syn = { path = "/home/thi/rust/syn" }
-
+[patch.crates-io.syn]
+git = "https://github.com/swfsql/syn.git"
+branch = "pub-items" 
 
 [features]
 full = [] 
