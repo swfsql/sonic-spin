@@ -184,20 +184,20 @@ pub mod post_mark {
 
     #[derive(Clone)]
     pub struct If {
-        pub then_branch: syn::Block,
+        pub then_branch: Block,
         pub else_branch: Option<(syn::Token![else], Box<Expr>)>,
     }
 
     #[derive(Clone)]
     pub struct While {
         pub attrs: Vec<syn::Attribute>,
-        pub body: syn::Block,
+        pub body: Block,
     }
 
     #[derive(Clone)]
     pub struct ForLoop {
         pub attrs: Vec<syn::Attribute>,
-        pub body: syn::Block,
+        pub body: Block,
     }
 
     #[derive(Clone)]
@@ -228,10 +228,10 @@ pub mod post_mark {
             let content;
             let brace_token = syn::braced!(content in input);
             let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-            let stmts = content.call(syn::Block::parse_within)?;
+            let stmts = content.call(Block::parse_within)?;
             Ok(While {
                 attrs: inner_attrs,
-                body: syn::Block {
+                body: Block {
                     brace_token: brace_token,
                     stmts: stmts,
                 },
@@ -245,10 +245,10 @@ pub mod post_mark {
             let content;
             let brace_token = syn::braced!(content in input);
             let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-            let stmts = content.call(syn::Block::parse_within)?;
+            let stmts = content.call(Block::parse_within)?;
             Ok(ForLoop {
                 attrs: inner_attrs,
-                body: syn::Block {
+                body: Block {
                     brace_token: brace_token,
                     stmts: stmts,
                 },
@@ -711,7 +711,7 @@ ast_enum_of_structs! {
             pub attrs: Vec<syn::Attribute>,
             pub if_token: syn::Token![if],
             pub cond: Box<Expr>,
-            pub then_branch: syn::Block,
+            pub then_branch: Block,
             pub else_branch: Option<(syn::Token![else], Box<Expr>)>,
         }),
 
@@ -723,7 +723,7 @@ ast_enum_of_structs! {
             pub label: Option<syn::Label>,
             pub while_token: syn::Token![while],
             pub cond: Box<Expr>,
-            pub body: syn::Block,
+            pub body: Block,
         }),
 
         /// A for loop: `for pat in expr { ... }`.
@@ -736,7 +736,7 @@ ast_enum_of_structs! {
             pub pat: Box<syn::Pat>,
             pub in_token: syn::Token![in],
             pub expr: Box<Expr>,
-            pub body: syn::Block,
+            pub body: Block,
         }),
 
         /// Conditionless loop: `loop { ... }`.
@@ -746,7 +746,7 @@ ast_enum_of_structs! {
             pub attrs: Vec<syn::Attribute>,
             pub label: Option<syn::Label>,
             pub loop_token: syn::Token![loop],
-            pub body: syn::Block,
+            pub body: Block,
         }),
 
         /// A `match` expression: `match n { Some(n) => {}, None => {} }`.
@@ -781,7 +781,7 @@ ast_enum_of_structs! {
         pub Unsafe(ExprUnsafe #full {
             pub attrs: Vec<syn::Attribute>,
             pub unsafe_token: syn::Token![unsafe],
-            pub block: syn::Block,
+            pub block: Block,
         }),
 
         /// A blocked scope: `{ ... }`.
@@ -790,7 +790,7 @@ ast_enum_of_structs! {
         pub Block(ExprBlock #full {
             pub attrs: Vec<syn::Attribute>,
             pub label: Option<syn::Label>,
-            pub block: syn::Block,
+            pub block: Block,
         }),
 
         /// An assignment expression: `a = compute()`.
@@ -981,7 +981,7 @@ ast_enum_of_structs! {
             pub attrs: Vec<syn::Attribute>,
             pub async_token: syn::Token![async],
             pub capture: Option<syn::Token![move]>,
-            pub block: syn::Block,
+            pub block: Block,
         }),
 
         /// A try block: `try { ... }`.
@@ -990,7 +990,7 @@ ast_enum_of_structs! {
         pub TryBlock(ExprTryBlock #full {
             pub attrs: Vec<syn::Attribute>,
             pub try_token: syn::Token![try],
-            pub block: syn::Block,
+            pub block: Block,
         }),
 
         /// A yield expression: `yield expr`.
@@ -2373,7 +2373,7 @@ pub mod parsing {
             let content;
             let brace_token = syn::braced!(content in input);
             let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-            let stmts = content.call(syn::Block::parse_within)?;
+            let stmts = content.call(Block::parse_within)?;
 
             Ok(ExprForLoop {
                 attrs: inner_attrs,
@@ -2382,7 +2382,7 @@ pub mod parsing {
                 pat: Box::new(pat),
                 in_token: in_token,
                 expr: Box::new(expr),
-                body: syn::Block {
+                body: Block {
                     brace_token: brace_token,
                     stmts: stmts,
                 },
@@ -2399,13 +2399,13 @@ pub mod parsing {
             let content;
             let brace_token = syn::braced!(content in input);
             let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-            let stmts = content.call(syn::Block::parse_within)?;
+            let stmts = content.call(Block::parse_within)?;
 
             Ok(ExprLoop {
                 attrs: inner_attrs,
                 label: label,
                 loop_token: loop_token,
-                body: syn::Block {
+                body: Block {
                     brace_token: brace_token,
                     stmts: stmts,
                 },
@@ -2550,7 +2550,7 @@ pub mod parsing {
         let (output, body) = if input.peek(syn::Token![->]) {
             let arrow_token: syn::Token![->] = input.parse()?;
             let ty: syn::Type = input.parse()?;
-            let body: syn::Block = input.parse()?;
+            let body: Block = input.parse()?;
             let output = syn::ReturnType::Type(arrow_token, Box::new(ty));
             let block = Expr::Block(ExprBlock {
                 attrs: Vec::new(),
@@ -2611,14 +2611,14 @@ pub mod parsing {
             let content;
             let brace_token = syn::braced!(content in input);
             let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-            let stmts = content.call(syn::Block::parse_within)?;
+            let stmts = content.call(Block::parse_within)?;
 
             Ok(ExprWhile {
                 attrs: inner_attrs,
                 label: label,
                 while_token: while_token,
                 cond: Box::new(cond),
-                body: syn::Block {
+                body: Block {
                     brace_token: brace_token,
                     stmts: stmts,
                 },
@@ -2788,12 +2788,12 @@ pub mod parsing {
         let content;
         let brace_token = syn::braced!(content in input);
         let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-        let stmts = content.call(syn::Block::parse_within)?;
+        let stmts = content.call(Block::parse_within)?;
 
         Ok(ExprUnsafe {
             attrs: inner_attrs,
             unsafe_token: unsafe_token,
-            block: syn::Block {
+            block: Block {
                 brace_token: brace_token,
                 stmts: stmts,
             },
@@ -2807,12 +2807,12 @@ pub mod parsing {
         let content;
         let brace_token = syn::braced!(content in input);
         let inner_attrs = content.call(syn::Attribute::parse_inner)?;
-        let stmts = content.call(syn::Block::parse_within)?;
+        let stmts = content.call(Block::parse_within)?;
 
         Ok(ExprBlock {
             attrs: inner_attrs,
             label: label,
-            block: syn::Block {
+            block: Block {
                 brace_token: brace_token,
                 stmts: stmts,
             },
@@ -2904,20 +2904,17 @@ pub mod parsing {
         }
     }
 
-    /*
     #[cfg(feature = "full")]
     impl Parse for Block {
         fn parse(input: ParseStream) -> Result<Self> {
             let content;
             Ok(Block {
-                brace_token: braced!(content in input),
+                brace_token: syn::braced!(content in input),
                 stmts: content.call(Block::parse_within)?,
             })
         }
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     impl Block {
         /// Parse the body of a block as zero or more statements, possibly
@@ -2928,7 +2925,7 @@ pub mod parsing {
         ///
         /// # Example
         ///
-        /// ```edition2018
+        /// ```ignore
         /// use syn::{braced, token, syn::Attribute, Block, Ident, Result, Stmt, Token};
         /// use syn::parse::{Parse, ParseStream};
         ///
@@ -2997,18 +2994,14 @@ pub mod parsing {
             Ok(stmts)
         }
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     impl Parse for Stmt {
         fn parse(input: ParseStream) -> Result<Self> {
             parse_stmt(input, false)
         }
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> Result<Stmt> {
         let ahead = input.fork();
@@ -3052,9 +3045,7 @@ pub mod parsing {
             stmt_expr(input, allow_nosemi)
         }
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     fn stmt_mac(input: ParseStream) -> Result<Stmt> {
         let attrs = input.call(syn::Attribute::parse_outer)?;
@@ -3076,9 +3067,7 @@ pub mod parsing {
             semi_token: semi_token,
         })))
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     fn stmt_local(input: ParseStream) -> Result<Local> {
         Ok(Local {
@@ -3117,9 +3106,7 @@ pub mod parsing {
             semi_token: input.parse()?,
         })
     }
-    */
 
-    /*
     #[cfg(feature = "full")]
     fn stmt_expr(input: ParseStream, allow_nosemi: bool) -> Result<Stmt> {
         let mut attrs = input.call(syn::Attribute::parse_outer)?;
@@ -3138,7 +3125,6 @@ pub mod parsing {
             Err(input.error("expected semicolon"))
         }
     }
-    */
 
     #[cfg(feature = "full")]
     impl Parse for Pat {

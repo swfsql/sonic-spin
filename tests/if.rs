@@ -152,16 +152,25 @@ fn if_f() {
     assert_eq!(res, alt);
 }
 
-// #[test]
-// fn if_g() {
-//     let mut acc = 0;
-//     sonic_spin!(
-//         true::(if) {
-//             true::(if) {
-//                 acc += 1;
-//             }
-//         }
-//     );
+#[test]
+fn if_g() {
+    let mut alt = 0;
+    if true {
+        if true {
+            alt += 1;
+        }
+    };
 
-//     assert_eq!(acc, 2);
-// }
+
+    let mut acc = 0;
+    sonic_spin!(
+        true::(if) {
+            true::(if) {
+                acc += 1;
+            }
+        }
+    );
+
+    assert_eq!(acc, 1);
+    assert_eq!(acc, alt);
+}
