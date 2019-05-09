@@ -18,32 +18,484 @@ use syn::{ast_enum_of_structs, ast_enum, ast_struct, maybe_ast_struct, generate_
 
 #[derive(Clone)]
 pub enum ExprMark {
-    EqToken(syn::Token![=]),
-    DotToken(syn::Token![.]),
+    Box(mark::MarkBox),
+    // InPlace(mark::InPlace),
+    Unary(mark::Unary),
+    Let(mark::Let),
+    If(mark::If),
+    While(mark::While),
+    ForLoop(mark::ForLoop),
+    Loop(mark::Loop),
+    Match(mark::Match),
+    Unsafe(mark::Unsafe),
+    // Block(mark::Block),
+    // Assign(mark::Assign),
+    // AssignOp(mark::AssignOp),
+    Reference(mark::Reference),
+    Break(mark::Break),
+    Return(mark::Return),
+    // Macro(mark::Macro),
+    // Paren(mark::Paren),
+    // Group(mark::Group),
+    Async(mark::Async),
+    TryBlock(mark::TryBlock),
+    Yield(mark::Yield),
 }
+
+#[derive(Clone)]
+pub enum PostExprMark {
+    If(post_mark::If),
+    While(post_mark::While),
+    ForLoop(post_mark::ForLoop),
+    Match(post_mark::Match),
+}
+
+pub mod mark {
+    use super::*;
+
+    #[derive(Clone)]
+    pub struct MarkBox {
+        pub box_token: syn::Token![box],
+    }
+
+    // TODO
+    // #[derive(Clone)]
+    // pub struct InPlace {
+    //     pub place: Box<Expr>,
+    //     pub arrow_token: syn::Token![<-],
+    // }
+
+    #[derive(Clone)]
+    pub struct Unary {
+        pub op: syn::UnOp
+    }
+
+    #[derive(Clone)]
+    pub struct Let {
+        pub let_token: syn::Token![let],
+        pub pats: Punctuated<syn::Pat, syn::Token![|]>,
+        pub eq_token: syn::Token![=], // maybe remove
+    }
+
+    #[derive(Clone)]
+    pub struct If {
+        pub if_token: syn::Token![if],
+    }
+
+    #[derive(Clone)]
+    pub struct While {
+        pub label: Option<syn::Label>,
+        pub while_token: syn::Token![while],
+    }
+
+    #[derive(Clone)]
+    pub struct ForLoop {
+        pub label: Option<syn::Label>,
+        pub for_token: syn::Token![for],
+        pub pat: Box<syn::Pat>,
+        pub in_token: syn::Token![in],
+    }
+
+    #[derive(Clone)]
+    pub struct Loop {
+        pub label: Option<syn::Label>,
+        pub loop_token: syn::Token![loop]
+    }
+
+    #[derive(Clone)]
+    pub struct Match {
+        pub match_token: syn::Token![match],
+    }
+
+    #[derive(Clone)]
+    pub struct Unsafe {
+        pub unsafe_token: syn::Token![unsafe]
+    }
+
+    // #[derive(Clone)]
+    // pub struct Block {
+    //     pub label: Option<syn::Label>
+    // }
+
+    // #[derive(Clone)]
+    // pub struct Assign {
+    //     pub left: Box<Expr>,
+    //     pub eq_token: syn::Token![=], // maybe remove
+    // }
+
+    // #[derive(Clone)]
+    // pub struct AssignOp {
+    //     pub left: Box<Expr>,
+    //     pub op: syn::BinOp,
+    // }
+
+    #[derive(Clone)]
+    pub struct Reference {
+        pub and_token: syn::Token![&],
+        pub mutability: Option<syn::Token![mut]>,
+    }
+
+    #[derive(Clone)]
+    pub struct Break {
+        pub break_token: syn::Token![break],
+        pub label: Option<syn::Lifetime>,
+    }
+
+    #[derive(Clone)]
+    pub struct Return {
+        pub return_token: syn::Token![return],
+    }
+
+    // #[derive(Clone)]
+    // pub struct Paren {
+    //     pub paren_token: syn::token::Paren,
+    // }
+
+    // #[derive(Clone)]
+    // pub struct Group {
+    //     pub group_token: syn::token::Group,
+    // }
+
+    #[derive(Clone)]
+    pub struct Async {
+        pub async_token: syn::Token![async],
+        pub capture: Option<syn::Token![move]>,
+    }
+
+    #[derive(Clone)]
+    pub struct TryBlock {
+        pub try_token: syn::Token![try],
+    }
+
+    #[derive(Clone)]
+    pub struct Yield {
+        pub yield_token: syn::Token![yield],
+    }
+
+    // TODO: Macro
+    // #[derive(Clone)]
+    // pub struct Macro {
+    //     pub mac: crate::resyn::Macro,
+    // }
+}
+
+pub mod post_mark {
+    use super::*;
+
+    #[derive(Clone)]
+    pub struct If {
+        pub then_branch: syn::Block,
+        pub else_branch: Option<(syn::Token![else], Box<Expr>)>,
+    }
+
+    #[derive(Clone)]
+    pub struct While {
+        pub attrs: Vec<syn::Attribute>,
+        pub body: syn::Block,
+    }
+
+    #[derive(Clone)]
+    pub struct ForLoop {
+        pub attrs: Vec<syn::Attribute>,
+        pub body: syn::Block,
+    }
+
+    #[derive(Clone)]
+    pub struct Match {
+        pub attrs: Vec<syn::Attribute>,
+        pub brace_token: syn::token::Brace,
+        pub arms: Vec<Arm>,
+    }
+
+    #[cfg(feature = "full")]
+    impl syn::parse::Parse for If {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let then_branch = input.parse()?;
+            let else_branch = {
+                if input.peek(syn::Token![else]) {
+                    Some(input.call(parsing::else_block)?)
+                } else {
+                    None
+                }
+            };
+            Ok(If {then_branch, else_branch})
+        }
+    }
+
+    #[cfg(feature = "full")]
+    impl syn::parse::Parse for While {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let content;
+            let brace_token = syn::braced!(content in input);
+            let inner_attrs = content.call(syn::Attribute::parse_inner)?;
+            let stmts = content.call(syn::Block::parse_within)?;
+            Ok(While {
+                attrs: inner_attrs,
+                body: syn::Block {
+                    brace_token: brace_token,
+                    stmts: stmts,
+                },
+            })
+        }
+    }
+
+    #[cfg(feature = "full")]
+    impl syn::parse::Parse for ForLoop {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let content;
+            let brace_token = syn::braced!(content in input);
+            let inner_attrs = content.call(syn::Attribute::parse_inner)?;
+            let stmts = content.call(syn::Block::parse_within)?;
+            Ok(ForLoop {
+                attrs: inner_attrs,
+                body: syn::Block {
+                    brace_token: brace_token,
+                    stmts: stmts,
+                },
+            })
+        }
+    }
+
+    #[cfg(feature = "full")]
+    impl syn::parse::Parse for Match {
+        fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+            let content;
+            let brace_token = syn::braced!(content in input);
+            let inner_attrs = content.call(syn::Attribute::parse_inner)?;
+
+            let mut arms = Vec::new();
+            while !content.is_empty() {
+                arms.push(content.call(Arm::parse)?);
+            }
+
+            Ok(Match {
+                attrs: inner_attrs,
+                brace_token: brace_token,
+                arms: arms,
+            })
+        }
+    }
+}
+
 
 #[cfg(feature = "full")]
 impl syn::parse::Parse for ExprMark {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let mark = if input.peek(syn::Token![=]) {
-            let token: syn::Token![=] = input.parse()?;
-            ExprMark::EqToken(token)
-        } else if input.peek(syn::Token![.]) {
-            let token: syn::Token![.] = input.parse()?;
-            ExprMark::DotToken(token)
+        let mark = if input.peek(syn::Token![&]) {
+            let and_token = input.parse()?;
+            let mutability = input.parse()?;
+            let mark = mark::Reference{and_token, mutability};
+            ExprMark::Reference(mark)
+        } else if input.peek(syn::Token![box]) {
+            let box_token = input.parse()?;
+            let mark = mark::MarkBox{box_token};
+            ExprMark::Box(mark)
+        } else if input.peek(syn::Token![*])
+            || input.peek(syn::Token![!])
+            || input.peek(syn::Token![-]) {
+            let op = input.parse()?;
+            let mark = mark::Unary{op};
+            ExprMark::Unary(mark)
+        } else if input.peek(syn::Token![let]) {
+            let let_token = input.parse()?;
+            let pats = {
+                let mut pats = Punctuated::new();
+                input.parse::<Option<syn::Token![|]>>()?;
+                let value: syn::Pat = input.parse()?;
+                pats.push_value(value);
+                while input.peek(syn::Token![|]) && !input.peek(syn::Token![||]) && !input.peek(syn::Token![|=]) {
+                    let punct = input.parse()?;
+                    pats.push_punct(punct);
+                    let value: syn::Pat = input.parse()?;
+                    pats.push_value(value);
+                }
+                pats
+            };
+            let eq_token = input.parse()?;
+            let mark = mark::Let{let_token, pats, eq_token};
+            ExprMark::Let(mark)
+        } else if input.peek(syn::Token![if]) {
+            let if_token = input.parse()?;
+            let mark = mark::If{if_token};
+            ExprMark::If(mark)
+        } else if input.peek(syn::Lifetime) {
+            let label: syn::Label = input.parse()?;
+            let label = Some(label);
+            if input.peek(syn::Token![while]) {
+                let while_token = input.parse()?;
+                let mark = mark::While{label, while_token};
+                ExprMark::While(mark)
+            } else if input.peek(syn::Token![for]) {
+                let for_token = input.parse()?;
+                let pat: syn::Pat = input.parse()?;
+                let pat = Box::new(pat);
+                let in_token: syn::Token![in] = input.parse()?;
+                let mark = mark::ForLoop{label, for_token, pat, in_token};
+                ExprMark::ForLoop(mark)
+            } else if input.peek(syn::Token![loop]) {
+                let loop_token = input.parse()?;
+                let mark = mark::Loop{label, loop_token};
+                ExprMark::Loop(mark)
+            } else if input.peek(syn::token::Brace) {
+                return Err(input.error("TODO Lifetimed Brace"));
+            } else {
+                return Err(input.error("expected loop or block expression"));
+            }
+        } else if input.peek(syn::Token![while]) {
+            let label = None;
+            let while_token = input.parse()?;
+            let mark = mark::While{label, while_token};
+            ExprMark::While(mark)
+        } else if input.peek(syn::Token![for]) {
+            let label = None;
+            let for_token = input.parse()?;
+            let pat: syn::Pat = input.parse()?;
+            let pat = Box::new(pat);
+            let in_token: syn::Token![in] = input.parse()?;
+            let mark = mark::ForLoop{label, for_token, pat, in_token};
+            ExprMark::ForLoop(mark)
+        } else if input.peek(syn::Token![loop]) {
+            let label = None;
+            let loop_token = input.parse()?;
+            let mark = mark::Loop{label, loop_token};
+            ExprMark::Loop(mark)
+        } else if input.peek(syn::Token![match]) {
+            let match_token = input.parse()?;
+            let mark = mark::Match{match_token};
+            ExprMark::Match(mark)
+        } else if input.peek(syn::Token![unsafe]) {
+            let unsafe_token = input.parse()?;
+            let mark = mark::Unsafe{unsafe_token};
+            ExprMark::Unsafe(mark)
+        } else if input.peek(syn::Token![break]) {
+            let break_token = input.parse()?;
+            let label = input.parse()?;
+            let mark = mark::Break{break_token, label};
+            ExprMark::Break(mark)
+        } else if input.peek(syn::Token![return]) {
+            let return_token = input.parse()?;
+            let mark = mark::Return{return_token};
+            ExprMark::Return(mark)
+        } else if input.peek(syn::token::Group) {
+            return Err(input.error("TODO Group Turboball"));
+        } else if input.peek(syn::Token![async]) {
+            let async_token = input.parse()?;
+            let capture = input.parse()?;
+            let mark = mark::Async{async_token, capture};
+            ExprMark::Async(mark)
+        } else if input.peek(syn::Token![try]) {
+            let try_token = input.parse()?;
+            let mark = mark::TryBlock{try_token};
+            ExprMark::TryBlock(mark)
+        } else if input.peek(syn::Token![yield]) {
+            let yield_token = input.parse()?;
+            let mark = mark::Yield{yield_token};
+            ExprMark::Yield(mark)
         } else {
-            panic!("unkown Turboball marker expression")
+            return Err(input.error("Unkown Turboball marker"));
         };
         Ok(mark)
     }
 }
 
+
+
 #[cfg(feature = "printing")]
 impl quote::ToTokens for ExprMark {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
-            ExprMark::EqToken(eq_token) => eq_token.to_tokens(tokens),
-            ExprMark::DotToken(dot_token) => dot_token.to_tokens(tokens),
+            ExprMark::Box(mark_box) => mark_box.box_token.to_tokens(tokens),
+            // ExprMark::InPlace(mark::InPlace),
+            ExprMark::Unary(mark_unary) => 
+                mark_unary.op.to_tokens(tokens),
+            ExprMark::Let(mark_let) => {
+                mark_let.let_token.to_tokens(tokens);
+                mark_let.pats.to_tokens(tokens);
+                mark_let.eq_token.to_tokens(tokens);
+            },
+            ExprMark::If(mark_if) => 
+                mark_if.if_token.to_tokens(tokens),
+            ExprMark::While(mark_while) => {
+                mark_while.label.to_tokens(tokens);
+                mark_while.while_token.to_tokens(tokens);
+            },
+            ExprMark::ForLoop(mark_for_loop) => {
+                mark_for_loop.label.to_tokens(tokens);
+                mark_for_loop.for_token.to_tokens(tokens);
+                mark_for_loop.pat.to_tokens(tokens);
+                mark_for_loop.in_token.to_tokens(tokens);
+            },
+            ExprMark::Loop(mark_loop) => {
+                mark_loop.label.to_tokens(tokens);
+                mark_loop.loop_token.to_tokens(tokens);
+            },
+            ExprMark::Match(mark_match) => 
+                mark_match.match_token.to_tokens(tokens),
+            ExprMark::Unsafe(mark_unsafe) => 
+                mark_unsafe.unsafe_token.to_tokens(tokens),
+            // ExprMark::Block(mark::Block),
+            // ExprMark::Assign(mark::Assign),
+            // ExprMark::AssignOp(mark::AssignOp),
+            ExprMark::Reference(mark_reference) => {
+                mark_reference.and_token.to_tokens(tokens);
+                mark_reference.mutability.to_tokens(tokens);
+            },
+            ExprMark::Break(mark_break) => {
+                mark_break.break_token.to_tokens(tokens);
+                mark_break.label.to_tokens(tokens);
+            },
+            ExprMark::Return(mark_return) => 
+                mark_return.return_token.to_tokens(tokens),
+            // ExprMark::Macro(mark::Macro),
+            // ExprMark::Paren(mark::Paren),
+            // ExprMark::Group(mark::Group),
+            ExprMark::Async(mark_async) => {
+                mark_async.async_token.to_tokens(tokens);
+                mark_async.capture.to_tokens(tokens);
+            },
+            ExprMark::TryBlock(mark_try_block) => 
+                mark_try_block.try_token.to_tokens(tokens),
+            ExprMark::Yield(mark_yield) => 
+                mark_yield.yield_token.to_tokens(tokens),
+        }
+    }
+}
+
+#[cfg(feature = "printing")]
+impl quote::ToTokens for PostExprMark {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        use quote::TokenStreamExt;
+        match self {
+            PostExprMark::If(post_if) => {
+                post_if.then_branch.to_tokens(tokens);
+                printing::maybe_wrap_else(tokens, &post_if.else_branch);
+            }
+            PostExprMark::While(post_while) => {
+                post_while.body.brace_token.surround(tokens, |tokens| {
+                    printing::inner_attrs_to_tokens(&post_while.attrs, tokens);
+                    tokens.append_all(&post_while.body.stmts);
+                });
+            }
+            PostExprMark::ForLoop(post_for_loop) => {
+                post_for_loop.body.brace_token.surround(tokens, |tokens| {
+                    printing::inner_attrs_to_tokens(&post_for_loop.attrs, tokens);
+                    tokens.append_all(&post_for_loop.body.stmts);
+                });
+            }
+            PostExprMark::Match(post_match) => {
+                post_match.brace_token.surround(tokens, |tokens| {
+                    printing::inner_attrs_to_tokens(&post_match.attrs, tokens);
+                    for (i, arm) in post_match.arms.iter().enumerate() {
+                        arm.to_tokens(tokens);
+                        // Ensure that we have a comma after a non-block arm, except
+                        // for the last one.
+                        let is_last = i == post_match.arms.len() - 1;
+                        if !is_last && requires_terminator(&arm.body) && arm.comma.is_none() {
+                            <syn::Token![,]>::default().to_tokens(tokens);
+                        }
+                    }
+                });
+            }
         }
     }
 }
@@ -519,6 +971,7 @@ ast_enum_of_structs! {
             pub colon2_token: syn::Token![::],
             pub paren_token: syn::token::Paren,
             pub expr_mark: ExprMark,
+            pub post_mark: Option<PostExprMark>,
         }),
 
         /// An async block: `async { ... }`.
@@ -1462,14 +1915,34 @@ pub mod parsing {
                 let paren_token = syn::parenthesized!(content in input);
                 let expr_mark: ExprMark = content.parse()?;
 
+                let post_mark = match expr_mark {
+                    ExprMark::If(_) => {
+                        let mark: post_mark::If = input.parse()?;
+                        Some(PostExprMark::If(mark))
+                    },
+                    ExprMark::While(_) => {
+                        let mark: post_mark::While = input.parse()?;
+                        Some(PostExprMark::While(mark))
+                    },
+                    ExprMark::ForLoop(_) => {
+                        let mark: post_mark::ForLoop = input.parse()?;
+                        Some(PostExprMark::ForLoop(mark))
+                    },
+                    ExprMark::Match(_) => {
+                        let mark: post_mark::Match = input.parse()?;
+                        Some(PostExprMark::Match(mark))
+                    },
+                    _ => None
+                };
+
                 e = Expr::Turboball(ExprTurboball {
                     attrs: Vec::new(),
                     expr: Box::new(e),
                     colon2_token,
                     paren_token,
                     expr_mark,
+                    post_mark,
                 });
-                // panic!("wuuuut");
             } else {
                 break;
             }
@@ -1869,7 +2342,7 @@ pub mod parsing {
     }
 
     #[cfg(feature = "full")]
-    fn else_block(input: ParseStream) -> Result<(syn::Token![else], Box<Expr>)> {
+    pub fn else_block(input: ParseStream) -> Result<(syn::Token![else], Box<Expr>)> {
         let else_token: syn::Token![else] = input.parse()?;
 
         let lookahead = input.lookahead1();
@@ -3136,7 +3609,7 @@ mod printing {
     // If the given expression is a bare `ExprStruct`, wraps it in parenthesis
     // before appending it to `TokenStream`.
     #[cfg(feature = "full")]
-    fn wrap_bare_struct(tokens: &mut TokenStream, e: &Expr) {
+    pub fn wrap_bare_struct(tokens: &mut TokenStream, e: &Expr) {
         if let Expr::Struct(_) = *e {
             syn::token::Paren::default().surround(tokens, |tokens| {
                 e.to_tokens(tokens);
@@ -3147,20 +3620,20 @@ mod printing {
     }
 
     #[cfg(feature = "full")]
-    fn outer_attrs_to_tokens(attrs: &[syn::Attribute], tokens: &mut TokenStream) {
+    pub fn outer_attrs_to_tokens(attrs: &[syn::Attribute], tokens: &mut TokenStream) {
         tokens.append_all(attrs.outer());
     }
 
     #[cfg(feature = "full")]
-    fn inner_attrs_to_tokens(attrs: &[syn::Attribute], tokens: &mut TokenStream) {
+    pub fn inner_attrs_to_tokens(attrs: &[syn::Attribute], tokens: &mut TokenStream) {
         tokens.append_all(attrs.inner());
     }
 
     #[cfg(not(feature = "full"))]
-    fn outer_attrs_to_tokens(_attrs: &[syn::Attribute], _tokens: &mut TokenStream) {}
+    pub fn outer_attrs_to_tokens(_attrs: &[syn::Attribute], _tokens: &mut TokenStream) {}
 
     #[cfg(not(feature = "full"))]
-    fn inner_attrs_to_tokens(_attrs: &[syn::Attribute], _tokens: &mut TokenStream) {}
+    pub fn inner_attrs_to_tokens(_attrs: &[syn::Attribute], _tokens: &mut TokenStream) {}
 
     #[cfg(feature = "full")]
     impl ToTokens for ExprBox {
@@ -3296,7 +3769,7 @@ mod printing {
     }
 
     #[cfg(feature = "full")]
-    fn maybe_wrap_else(tokens: &mut TokenStream, else_: &Option<(syn::Token![else], Box<Expr>)>) {
+    pub fn maybe_wrap_else(tokens: &mut TokenStream, else_: &Option<(syn::Token![else], Box<Expr>)>) {
         if let Some((ref else_token, ref else_)) = *else_ {
             else_token.to_tokens(tokens);
 
@@ -3666,6 +4139,7 @@ mod printing {
             outer_attrs_to_tokens(&self.attrs, tokens);
             self.expr_mark.to_tokens(tokens);
             self.expr.to_tokens(tokens);
+            self.post_mark.to_tokens(tokens);
         }
     }
 

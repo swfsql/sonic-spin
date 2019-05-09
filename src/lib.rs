@@ -30,16 +30,19 @@ pub fn sonic_spin(item: TokenStream) -> TokenStream {
        #input
     };
 
+    let quoted = format!(" ==> <  {}  >\n", &reparsed);
+
     // println!(" ==> <  {}  >", &replica);
-    println!(" ==> <  {}  >\n", &reparsed);
+    println!("{}", &quoted);
     println!("TODO: Expr to Tokens ------------------------- --------------------------------------"); 
 
+    // panic!("{}", &quoted);
 
-    let tokens = quote! {
-        panic!("TODO");
-    };
+    // let tokens = quote! {
+    //     panic!("TODO");
+    // };
 
-    tokens.into()
+    reparsed.into()
 }
 
 
