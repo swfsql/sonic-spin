@@ -1,0 +1,29 @@
+[package]
+name = "sonic_spin"
+version = "0.1.0"
+authors = ["Thiago <swfsql@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "=0.15.30", features = ["full"] } 
+proc-macro2 = { version = "0.4.4", default-features = false }
+quote = "0.6.11"
+
+[patch.crates-io]
+syn = { path = "/home/thi/rust/syn" }
+
+
+[features]
+full = [] 
+derive = []
+parsing = []
+visit = []
+visit-mut = []
+fold = []
+clone-impls = []
+extra-traits = []
+default = ["full", "derive", "parsing", "clone-impls"]
+
