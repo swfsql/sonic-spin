@@ -23,16 +23,20 @@ mod resyn;
 
 #[proc_macro]
 pub fn sonic_spin(item: TokenStream) -> TokenStream {
-    // let input = syn::parse_macro_input!(item as resyn::item_fn::ItemFn);
+    let input = syn::parse_macro_input!(item as resyn::Expr);
 
     // replicates the input function (after the custom ItemFn parsing)
-    // let replica = quote! {
-    //    #input
-    // };
+    let reparsed = quote! {
+       #input
+    };
+
+    // println!(" ==> <  {}  >", &replica);
+    println!(" ==> <  {}  >\n", &reparsed);
+    println!("TODO: Expr to Tokens ------------------------- --------------------------------------"); 
 
 
     let tokens = quote! {
-        TODO
+        panic!("TODO");
     };
 
     tokens.into()

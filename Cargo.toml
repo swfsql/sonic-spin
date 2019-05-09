@@ -8,7 +8,7 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-syn = { version = "=0.15.30", features = ["full"] } 
+syn = { version = "=0.15.30", features = ["full", "printing"] } 
 proc-macro2 = { version = "0.4.4", default-features = false }
 quote = "0.6.11"
 
@@ -25,5 +25,6 @@ visit-mut = []
 fold = []
 clone-impls = []
 extra-traits = []
-default = ["full", "derive", "parsing", "clone-impls"]
+printing = []
+default = ["full", "derive", "parsing", "clone-impls", "printing"]
 

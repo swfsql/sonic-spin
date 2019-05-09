@@ -14,8 +14,39 @@ use std::mem;
 use crate::resyn;
 
 // #[macro_use]
-use syn::{ast_enum_of_structs, ast_enum, ast_struct, maybe_ast_struct};
+use syn::{ast_enum_of_structs, ast_enum, ast_struct, maybe_ast_struct, generate_to_tokens, to_tokens_call};
 
+#[derive(Clone)]
+pub enum ExprMark {
+    EqToken(syn::Token![=]),
+    DotToken(syn::Token![.]),
+}
+
+#[cfg(feature = "full")]
+impl syn::parse::Parse for ExprMark {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mark = if input.peek(syn::Token![=]) {
+            let token: syn::Token![=] = input.parse()?;
+            ExprMark::EqToken(token)
+        } else if input.peek(syn::Token![.]) {
+            let token: syn::Token![.] = input.parse()?;
+            ExprMark::DotToken(token)
+        } else {
+            panic!("unkown Turboball marker expression")
+        };
+        Ok(mark)
+    }
+}
+
+#[cfg(feature = "printing")]
+impl quote::ToTokens for ExprMark {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        match self {
+            ExprMark::EqToken(eq_token) => eq_token.to_tokens(tokens),
+            ExprMark::DotToken(dot_token) => dot_token.to_tokens(tokens),
+        }
+    }
+}
 
 ast_enum_of_structs! {
     /// A Rust expression.
@@ -274,7 +305,7 @@ ast_enum_of_structs! {
             pub match_token: syn::Token![match],
             pub expr: Box<Expr>,
             pub brace_token: syn::token::Brace,
-            pub arms: Vec<syn::Arm>,
+            pub arms: Vec<Arm>,
         }),
 
         /// A closure expression: `|a, b| a + b`.
@@ -479,6 +510,17 @@ ast_enum_of_structs! {
             pub question_token: syn::Token![?],
         }),
 
+        /// A turboball expression: `expr::(..)`.
+        ///
+        /// *This type is available if Syn is built with the `"full"` feature.*
+        pub Turboball(ExprTurboball #full {
+            pub attrs: Vec<syn::Attribute>,
+            pub expr: Box<Expr>,
+            pub colon2_token: syn::Token![::],
+            pub paren_token: syn::token::Paren,
+            pub expr_mark: ExprMark,
+        }),
+
         /// An async block: `async { ... }`.
         ///
         /// *This type is available if Syn is built with the `"full"` feature.*
@@ -579,6 +621,7 @@ impl Expr {
             | Expr::Try(ExprTry { ref mut attrs, .. })
             | Expr::Async(ExprAsync { ref mut attrs, .. })
             | Expr::TryBlock(ExprTryBlock { ref mut attrs, .. })
+            | Expr::Turboball(ExprTurboball { ref mut attrs, .. })
             | Expr::Yield(ExprYield { ref mut attrs, .. }) => mem::replace(attrs, new),
             Expr::Verbatim(_) => Vec::new(),
         }
@@ -965,7 +1008,6 @@ ast_struct! {
     }
 }
 
-/*
 #[cfg(any(feature = "parsing", feature = "printing"))]
 #[cfg(feature = "full")]
 fn requires_terminator(expr: &Expr) -> bool {
@@ -983,7 +1025,6 @@ fn requires_terminator(expr: &Expr) -> bool {
         _ => true,
     }
 }
-*/
 
 #[cfg(feature = "parsing")]
 pub mod parsing {
@@ -1414,6 +1455,21 @@ pub mod parsing {
                     expr: Box::new(e),
                     question_token: input.parse()?,
                 });
+            } else if input.peek(syn::Token![::]) {
+                use syn::parse::Parse;
+                let colon2_token: syn::Token![::] = input.parse()?;
+                let content;
+                let paren_token = syn::parenthesized!(content in input);
+                let expr_mark: ExprMark = content.parse()?;
+
+                e = Expr::Turboball(ExprTurboball {
+                    attrs: Vec::new(),
+                    expr: Box::new(e),
+                    colon2_token,
+                    paren_token,
+                    expr_mark,
+                });
+                // panic!("wuuuut");
             } else {
                 break;
             }
@@ -1691,7 +1747,6 @@ pub mod parsing {
         }
     }
 
-    /*
     #[cfg(feature = "full")]
     fn expr_early(input: ParseStream) -> Result<Expr> {
         let mut attrs = input.call(syn::Attribute::parse_outer)?;
@@ -1735,7 +1790,6 @@ pub mod parsing {
         expr.replace_attrs(attrs);
         Ok(expr)
     }
-    */
 
     impl Parse for ExprLit {
         fn parse(input: ParseStream) -> Result<Self> {
@@ -1898,7 +1952,7 @@ pub mod parsing {
 
             let mut arms = Vec::new();
             while !content.is_empty() {
-                arms.push(content.call(syn::Arm::parse)?);
+                arms.push(content.call(Arm::parse)?);
             }
 
             Ok(ExprMatch {
@@ -1926,7 +1980,7 @@ pub mod parsing {
                             match expr {
                                 Expr::$variant(inner) => return Ok(inner),
                                 Expr::Group(next) => expr = *next.expr,
-                                _ => return Err(Error::new_spanned(expr, $msg)),
+                                _ => return Err(syn::Error::new_spanned(expr, $msg)),
                             }
                         }
                     }
@@ -2816,7 +2870,6 @@ pub mod parsing {
         }
     }
 
-    /*
     #[cfg(feature = "full")]
     impl Parse for Arm {
         fn parse(input: ParseStream) -> Result<Arm> {
@@ -2864,7 +2917,6 @@ pub mod parsing {
             })
         }
     }
-    */
 
     /*
     impl Parse for Index {
@@ -3077,9 +3129,9 @@ mod printing {
     use quote::{ToTokens, TokenStreamExt};
 
     #[cfg(feature = "full")]
-    use attr::FilterAttrs;
+    use syn::attr::FilterAttrs;
     #[cfg(feature = "full")]
-    use print::TokensOrDefault;
+    use syn::print::TokensOrDefault;
 
     // If the given expression is a bare `ExprStruct`, wraps it in parenthesis
     // before appending it to `TokenStream`.
@@ -3387,9 +3439,9 @@ mod printing {
             self.or1_token.to_tokens(tokens);
             for input in self.inputs.pairs() {
                 match **input.value() {
-                    FnArg::Captured(ArgCaptured {
+                    syn::FnArg::Captured(syn::ArgCaptured {
                         ref pat,
-                        ty: Type::Infer(_),
+                        ty: syn::Type::Infer(_),
                         ..
                     }) => {
                         pat.to_tokens(tokens);
@@ -3490,8 +3542,8 @@ mod printing {
             outer_attrs_to_tokens(&self.attrs, tokens);
             self.from.to_tokens(tokens);
             match self.limits {
-                RangeLimits::HalfOpen(ref t) => t.to_tokens(tokens),
-                RangeLimits::Closed(ref t) => t.to_tokens(tokens),
+                syn::RangeLimits::HalfOpen(ref t) => t.to_tokens(tokens),
+                syn::RangeLimits::Closed(ref t) => t.to_tokens(tokens),
             }
             self.to.to_tokens(tokens);
         }
@@ -3500,7 +3552,7 @@ mod printing {
     impl ToTokens for ExprPath {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             outer_attrs_to_tokens(&self.attrs, tokens);
-            private::print_path(tokens, &self.qself, &self.path);
+            syn::private::print_path(tokens, &self.qself, &self.path);
         }
     }
 
@@ -3608,6 +3660,15 @@ mod printing {
         }
     }
 
+    #[cfg(feature = "full")]
+    impl ToTokens for ExprTurboball {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            outer_attrs_to_tokens(&self.attrs, tokens);
+            self.expr_mark.to_tokens(tokens);
+            self.expr.to_tokens(tokens);
+        }
+    }
+
     impl ToTokens for ExprVerbatim {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.tts.to_tokens(tokens);
@@ -3696,7 +3757,7 @@ mod printing {
     #[cfg(feature = "full")]
     impl ToTokens for PatPath {
         fn to_tokens(&self, tokens: &mut TokenStream) {
-            private::print_path(tokens, &self.qself, &self.path);
+            syn::private::print_path(tokens, &self.qself, &self.path);
         }
     }
 
@@ -3751,8 +3812,8 @@ mod printing {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.lo.to_tokens(tokens);
             match self.limits {
-                RangeLimits::HalfOpen(ref t) => t.to_tokens(tokens),
-                RangeLimits::Closed(ref t) => syn::Token![...](t.spans).to_tokens(tokens),
+                syn::RangeLimits::HalfOpen(ref t) => t.to_tokens(tokens),
+                syn::RangeLimits::Closed(ref t) => syn::Token![...](t.spans).to_tokens(tokens),
             }
             self.hi.to_tokens(tokens);
         }
