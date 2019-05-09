@@ -7,47 +7,43 @@ use sonic_spin::sonic_spin;
 use common::Pipe;
 
 #[test]
-fn if_normal() {
+fn if_normal() { sonic_spin!{
     let alt = if true {
         3
     } else {
         4
     };
 
-    let res = sonic_spin!(
-        true::(if) {
-            3
-        } else {
-            4
-        }
-    );
+    let res = true::(if) {
+        3
+    } else {
+        4
+    };
 
     assert_eq!(res, 3);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_else() {
+fn if_else() { sonic_spin! {
     let alt = if false {
         3
     } else {
         4
     };
 
-    let res = sonic_spin!(
-        false::(if) {
-            3
-        } else {
-            4
-        }
-    );
+    let res = false::(if) {
+        3
+    } else {
+        4
+    };
 
     assert_eq!(res, 4);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_3_branches() {
+fn if_3_branches() { sonic_spin! {
     let alt = if false {
         3
     } else if true {
@@ -56,22 +52,20 @@ fn if_3_branches() {
         5
     };
 
-    let res = sonic_spin!(
-        false::(if) {
-            3
-        } else if true {
-            4
-        } else {
-            5
-        }
-    );
+    let res = false::(if) {
+        3
+    } else if true {
+        4
+    } else {
+        5
+    };
 
     assert_eq!(res, 4);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_3_branches_else() {
+fn if_3_branches_else() { sonic_spin! {
     let alt = if false {
         3
     } else if false {
@@ -80,22 +74,20 @@ fn if_3_branches_else() {
         5
     };
 
-    let res = sonic_spin!(
-        false::(if) {
-            3
-        } else if false {
-            4
-        } else {
-            5
-        }
-    );
+    let res = false::(if) {
+        3
+    } else if false {
+        4
+    } else {
+        5
+    };
 
     assert_eq!(res, 5);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_pipe() {
+fn if_pipe() { sonic_spin! {
     let alt = if false {
         0
     } else {
@@ -108,23 +100,22 @@ fn if_pipe() {
         3
     };
 
-    let res = sonic_spin!(
-        false::(if) {
-            0
-        } else {
-            1
-        }.pipe(|n| n == 1)::(if) {
-            2
-        } else {
-            3
-        }
-    );
+    let res = false::(if) {
+        0
+    } else {
+        1
+    }.pipe(|n| n == 1)::(if) {
+        2
+    } else {
+        3
+    };
+
     assert_eq!(res, 2);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_pipe_else() {
+fn if_pipe_else() { sonic_spin!{
     let alt = if false {
         0
     } else {
@@ -137,24 +128,22 @@ fn if_pipe_else() {
         3
     };
 
-    let res = sonic_spin!(
-        false::(if) {
-            0
-        } else {
-            1
-        }.pipe(|n| n == 0)::(if) {
-            2
-        } else {
-            3
-        }
-    );
+    let res = false::(if) {
+        0
+    } else {
+        1
+    }.pipe(|n| n == 0)::(if) {
+        2
+    } else {
+        3
+    };
 
     assert_eq!(res, 3);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn if_nested() {
+fn if_nested() { sonic_spin! {
     let mut alt = 0;
     if true {
         if true {
@@ -162,16 +151,13 @@ fn if_nested() {
         }
     };
 
-
     let mut acc = 0;
-    sonic_spin!(
+    true::(if) {
         true::(if) {
-            true::(if) {
-                acc += 1;
-            }
+            acc += 1;
         }
-    );
+    };
 
     assert_eq!(acc, 1);
     assert_eq!(acc, alt);
-}
+}}

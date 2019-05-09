@@ -10,8 +10,15 @@ use quote::quote;
 
 #[proc_macro]
 pub fn sonic_spin(item: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(item as resyn::Expr);
+    let rebraced = {
+        use std::str::FromStr;
+        let mut rebraced: String = String::from("{") 
+            + &item.to_string()
+            + &"}";
+        TokenStream::from_str(&rebraced).unwrap()
+    };
 
+    let input = syn::parse_macro_input!(rebraced as resyn::expr::Block);
     let reparsed = quote! {
        #input
     };

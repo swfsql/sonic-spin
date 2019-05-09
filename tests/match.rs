@@ -5,7 +5,7 @@ mod common;
 use sonic_spin::sonic_spin;
 
 #[test]
-fn match_cascade() {
+fn match_cascade() { sonic_spin! {
     let alt = match 0 {
         x => x + 2
     };
@@ -13,20 +13,18 @@ fn match_cascade() {
         x => x + 10
     };
 
-    let res = sonic_spin!(
-        0::(match) {
-            x => x + 2
-        }::(match)  {
-            x => x + 10
-        }
-    );
+    let res = 0::(match) {
+        x => x + 2
+    }::(match)  {
+        x => x + 10
+    };
 
     assert_eq!(res, 12);
     assert_eq!(res, alt);
-}
+}}
 
 #[test]
-fn match_nested() {
+fn match_nested() { sonic_spin! {
     let alt = match 0 {
         a @ 0..=3 => match a {
             y => y + 1000,
@@ -34,15 +32,13 @@ fn match_nested() {
         _x => 5
     };
 
-    let res = sonic_spin!(
-        0::(match) {
-            a @ 0..=3 => a::(match) {
-                y => y + 1000,
-            },
-            _x => 5,
-        }
-    );
+    let res = 0::(match) {
+        a @ 0..=3 => a::(match) {
+            y => y + 1000,
+        },
+        _x => 5,
+    };
 
     assert_eq!(res, 1000);
     assert_eq!(res, alt);
-}
+}}
