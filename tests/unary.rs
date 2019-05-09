@@ -1,12 +1,11 @@
 #![feature(proc_macro_hygiene)]
+#![allow(unused_parens)]
 
 mod common;
-
 use sonic_spin::sonic_spin;
-use common::Pipe;
 
 #[test]
-fn un_a() {
+fn un_deref() {
     let x = &5;
     let alt = *x;
 
@@ -19,7 +18,7 @@ fn un_a() {
 }
 
 #[test]
-fn un_b() {
+fn un_not() {
     let x = false;
     let alt = !x;
 
@@ -32,7 +31,7 @@ fn un_b() {
 }
 
 #[test]
-fn un_c() {
+fn un_minus() {
     let x = 2;
     let alt = -x;
 
@@ -45,7 +44,7 @@ fn un_c() {
 }
 
 #[test]
-fn un_d() {
+fn un_minus_deref() {
     let x = &2;
     let alt = -*x;
 
@@ -56,4 +55,3 @@ fn un_d() {
     assert_eq!(res, -2);
     assert_eq!(res, alt);
 }
-

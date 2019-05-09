@@ -28,7 +28,7 @@ dependencies = [
 [[package]]
 name = "syn"
 version = "0.15.30"
-source = "git+https://github.com/swfsql/syn.git?branch=pub-items#76636a6f02e73760b2bf75bd1f9579d9b6b76cc1"
+source = "git+https://github.com/swfsql/syn.git?branch=pub-items#f8cf358ff569537da039cbfd77ce7bbdba320a75"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",

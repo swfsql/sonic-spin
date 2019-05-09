@@ -1,12 +1,11 @@
 #![feature(proc_macro_hygiene)]
+#![allow(unused_parens)]
 
 mod common;
-
 use sonic_spin::sonic_spin;
-use common::Pipe;
 
 #[test]
-fn match_a() {
+fn match_cascade() {
     let alt = match 0 {
         x => x + 2
     };
@@ -23,5 +22,27 @@ fn match_a() {
     );
 
     assert_eq!(res, 12);
+    assert_eq!(res, alt);
+}
+
+#[test]
+fn match_nested() {
+    let alt = match 0 {
+        a @ 0..=3 => match a {
+            y => y + 1000,
+        },
+        _x => 5
+    };
+
+    let res = sonic_spin!(
+        0::(match) {
+            a @ 0..=3 => a::(match) {
+                y => y + 1000,
+            },
+            _x => 5,
+        }
+    );
+
+    assert_eq!(res, 1000);
     assert_eq!(res, alt);
 }

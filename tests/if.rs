@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene)]
+#![allow(unused_parens)]
 
 mod common;
 
@@ -6,7 +7,7 @@ use sonic_spin::sonic_spin;
 use common::Pipe;
 
 #[test]
-fn if_a() {
+fn if_normal() {
     let alt = if true {
         3
     } else {
@@ -26,7 +27,7 @@ fn if_a() {
 }
 
 #[test]
-fn if_b() {
+fn if_else() {
     let alt = if false {
         3
     } else {
@@ -46,7 +47,7 @@ fn if_b() {
 }
 
 #[test]
-fn if_c() {
+fn if_3_branches() {
     let alt = if false {
         3
     } else if true {
@@ -70,7 +71,7 @@ fn if_c() {
 }
 
 #[test]
-fn if_d() {
+fn if_3_branches_else() {
     let alt = if false {
         3
     } else if false {
@@ -94,7 +95,7 @@ fn if_d() {
 }
 
 #[test]
-fn if_e() {
+fn if_pipe() {
     let alt = if false {
         0
     } else {
@@ -123,7 +124,7 @@ fn if_e() {
 }
 
 #[test]
-fn if_f() {
+fn if_pipe_else() {
     let alt = if false {
         0
     } else {
@@ -153,7 +154,7 @@ fn if_f() {
 }
 
 #[test]
-fn if_g() {
+fn if_nested() {
     let mut alt = 0;
     if true {
         if true {

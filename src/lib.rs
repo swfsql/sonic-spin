@@ -16,8 +16,8 @@ pub fn sonic_spin(item: TokenStream) -> TokenStream {
        #input
     };
 
-    let quoted = format!(" ==> <  {}  >\n", &reparsed);
-    println!("{}", &quoted);
+    // let quoted = format!(" ==> <  {}  >\n", &reparsed);
+    // println!("{}", &quoted);
 
     reparsed.into()
 }

@@ -1424,41 +1424,7 @@ pub mod parsing {
                     question_token: input.parse()?,
                 });
             } else if input.peek(syn::Token![::]) {
-                use turboball::{ExprMark, PostExprMark, post_mark};
-                use syn::parse::Parse;
-                let colon2_token: syn::Token![::] = input.parse()?;
-                let content;
-                let paren_token = syn::parenthesized!(content in input);
-                let expr_mark: ExprMark = content.parse()?;
-
-                let post_mark = match expr_mark {
-                    ExprMark::If(_) => {
-                        let mark: post_mark::If = input.parse()?;
-                        Some(PostExprMark::If(mark))
-                    },
-                    ExprMark::While(_) => {
-                        let mark: post_mark::While = input.parse()?;
-                        Some(PostExprMark::While(mark))
-                    },
-                    ExprMark::ForLoop(_) => {
-                        let mark: post_mark::ForLoop = input.parse()?;
-                        Some(PostExprMark::ForLoop(mark))
-                    },
-                    ExprMark::Match(_) => {
-                        let mark: post_mark::Match = input.parse()?;
-                        Some(PostExprMark::Match(mark))
-                    },
-                    _ => None
-                };
-
-                e = Expr::Turboball(ExprTurboball {
-                    attrs: Vec::new(),
-                    expr: Box::new(e),
-                    colon2_token,
-                    paren_token,
-                    expr_mark,
-                    post_mark,
-                });
+                e = turboball::parse_turboball(input, e)?;
             } else {
                 break;
             }
@@ -1523,7 +1489,10 @@ pub mod parsing {
         {
             expr_closure(input, allow_struct).map(Expr::Closure)
         } else if input.peek(Ident)
-            || input.peek(syn::Token![::])
+            || (
+                input.peek(syn::Token![::])
+                && !input.peek3(syn::token::Paren)
+               )
             || input.peek(syn::Token![<])
             || input.peek(syn::Token![self])
             || input.peek(syn::Token![Self])
@@ -1583,6 +1552,7 @@ pub mod parsing {
                 _ => unreachable!(),
             }
             Ok(expr)
+        // } else if input.peek(syn::Token![::]) && input.peek3(syn::token::Paren) {
         } else {
             Err(input.error("expected expression"))
         }
@@ -2319,7 +2289,6 @@ pub mod parsing {
     #[cfg(feature = "full")]
     pub fn expr_block(input: ParseStream) -> Result<ExprBlock> {
         let label: Option<syn::Label> = input.parse()?;
-
         let content;
         let brace_token = syn::braced!(content in input);
         let inner_attrs = content.call(syn::Attribute::parse_inner)?;
