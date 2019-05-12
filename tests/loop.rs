@@ -54,3 +54,22 @@ fn loop_nested_label() {
     assert_eq!(acc, 4);
     assert_eq!(acc, _acc);
 }
+
+#[ignore]
+#[test]
+fn loop_insert_braces() { sonic_spin! {
+    let do_break = true;
+    loop {
+        if do_break {
+            break
+        }
+    };
+
+    // TODO: automatically insert the surrouding braces
+    { // TODO: remove line
+        do_break::(if) {
+            break
+        }
+    } // TODO: remove line
+    ::(loop);
+}}
