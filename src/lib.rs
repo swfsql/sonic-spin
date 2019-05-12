@@ -12,7 +12,7 @@ use quote::quote;
 pub fn sonic_spin(item: TokenStream) -> TokenStream {
     let rebraced = {
         use std::str::FromStr;
-        let mut rebraced: String = String::from("{") 
+        let rebraced: String = String::from("{") 
             + &item.to_string()
             + &"}";
         TokenStream::from_str(&rebraced).unwrap()

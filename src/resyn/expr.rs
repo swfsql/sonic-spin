@@ -1735,7 +1735,12 @@ pub mod parsing {
             return parse_expr(input, expr, allow_struct, Precedence::Any);
         };
 
-        if input.peek(syn::Token![.]) || input.peek(syn::Token![?]) {
+        if input.peek(syn::Token![.])
+        || input.peek(syn::Token![?])
+        || (
+            input.peek(syn::Token![::])
+            && input.peek3(syn::token::Paren)
+           ) {
             expr = trailer_helper(input, expr)?;
 
             attrs.extend(expr.replace_attrs(Vec::new()));
