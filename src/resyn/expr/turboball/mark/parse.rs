@@ -60,8 +60,9 @@ impl syn::parse::Parse for ExprMark {
                 let loop_token = input.parse()?;
                 let mark = mark::Loop{label, loop_token};
                 ExprMark::Loop(mark)
-            } else if input.peek(syn::token::Brace) {
-                return Err(input.error("TODO Lifetimed Brace"));
+            } else if input.is_empty() {
+                let mark = mark::Block{label};
+                ExprMark::Block(mark)
             } else {
                 return Err(input.error("expected loop or block expression"));
             }

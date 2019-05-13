@@ -15,7 +15,7 @@ pub enum ExprMark {
     Loop(mark::Loop),
     Match(mark::Match),
     Unsafe(mark::Unsafe),
-    // Block(mark::Block),
+    Block(mark::Block),
     // Assign(mark::Assign),
     // AssignOp(mark::AssignOp),
     Reference(mark::Reference),
@@ -88,10 +88,10 @@ pub struct Unsafe {
     pub unsafe_token: syn::Token![unsafe]
 }
 
-// #[derive(Clone)]
-// pub struct Block {
-//     pub label: Option<syn::Label>
-// }
+#[derive(Clone)]
+pub struct Block {
+    pub label: Option<syn::Label>
+}
 
 // #[derive(Clone)]
 // pub struct Assign {

@@ -1552,7 +1552,6 @@ pub mod parsing {
                 _ => unreachable!(),
             }
             Ok(expr)
-        // } else if input.peek(syn::Token![::]) && input.peek3(syn::token::Paren) {
         } else {
             Err(input.error("expected expression"))
         }

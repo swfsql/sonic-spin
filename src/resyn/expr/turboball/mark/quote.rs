@@ -33,7 +33,8 @@ impl quote::ToTokens for ExprMark {
                 mark_match.match_token.to_tokens(tokens),
             ExprMark::Unsafe(mark_unsafe) => 
                 mark_unsafe.unsafe_token.to_tokens(tokens),
-            // ExprMark::Block(mark::Block),
+            ExprMark::Block(mark_block) => 
+                mark_block.label.to_tokens(tokens),
             // ExprMark::Assign(mark::Assign),
             // ExprMark::AssignOp(mark::AssignOp),
             ExprMark::Reference(mark_reference) => {
