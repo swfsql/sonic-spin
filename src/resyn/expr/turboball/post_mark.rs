@@ -46,7 +46,10 @@ impl syn::parse::Parse for If {
                 None
             }
         };
-        Ok(If {then_branch, else_branch})
+        Ok(If {
+            then_branch,
+            else_branch,
+        })
     }
 }
 

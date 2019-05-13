@@ -43,7 +43,7 @@ pub struct MarkBox {
 
 #[derive(Clone)]
 pub struct Unary {
-    pub op: syn::UnOp
+    pub op: syn::UnOp,
 }
 
 #[derive(Clone)]
@@ -75,7 +75,7 @@ pub struct ForLoop {
 #[derive(Clone)]
 pub struct Loop {
     pub label: Option<syn::Label>,
-    pub loop_token: syn::Token![loop]
+    pub loop_token: syn::Token![loop],
 }
 
 #[derive(Clone)]
@@ -85,12 +85,12 @@ pub struct Match {
 
 #[derive(Clone)]
 pub struct Unsafe {
-    pub unsafe_token: syn::Token![unsafe]
+    pub unsafe_token: syn::Token![unsafe],
 }
 
 #[derive(Clone)]
 pub struct Block {
-    pub label: Option<syn::Label>
+    pub label: Option<syn::Label>,
 }
 
 // #[derive(Clone)]

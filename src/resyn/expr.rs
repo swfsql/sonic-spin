@@ -1,17 +1,18 @@
 // changes https://github.com/dtolnay/syn/blob/master/src/expr.rs
 
-use syn::Ident;
+#[cfg(feature = "extra-traits")]
+use crate::resyn;
 use proc_macro2::{Span, TokenStream};
-use syn::punctuated::Punctuated;
 #[cfg(feature = "extra-traits")]
 use std::hash::{Hash, Hasher};
 #[cfg(all(feature = "parsing", feature = "full"))]
 use std::mem;
-#[cfg(feature = "extra-traits")]
+use syn::punctuated::Punctuated;
+use syn::Ident;
 
-use crate::resyn;
-
-use syn::{ast_enum_of_structs, ast_enum, ast_struct, maybe_ast_struct, generate_to_tokens, to_tokens_call};
+use syn::{
+    ast_enum, ast_enum_of_structs, ast_struct, generate_to_tokens, maybe_ast_struct, to_tokens_call,
+};
 
 pub mod turboball;
 
@@ -100,7 +101,7 @@ ast_enum_of_structs! {
             pub expr: Box<Expr>,
         }),
 
-        
+
         /// A placement expression: `place <- value`.
         ///
         /// *This type is available if Syn is built with the `"full"` feature.*
@@ -1184,7 +1185,10 @@ pub mod parsing {
                     as_token: as_token,
                     ty: Box::new(ty),
                 });
-            } else if Precedence::Cast >= base && input.peek(syn::Token![:]) && !input.peek(syn::Token![::]) {
+            } else if Precedence::Cast >= base
+                && input.peek(syn::Token![:])
+                && !input.peek(syn::Token![::])
+            {
                 let colon_token: syn::Token![:] = input.parse()?;
                 let ty = input.call(syn::Type::without_plus)?;
                 lhs = Expr::Type(ExprType {
@@ -1256,7 +1260,9 @@ pub mod parsing {
             Precedence::Placement
         } else if input.peek(syn::Token![..]) {
             Precedence::Range
-        } else if input.peek(syn::Token![as]) || input.peek(syn::Token![:]) && !input.peek(syn::Token![::]) {
+        } else if input.peek(syn::Token![as])
+            || input.peek(syn::Token![:]) && !input.peek(syn::Token![::])
+        {
             Precedence::Cast
         } else {
             Precedence::Any
@@ -1477,22 +1483,21 @@ pub mod parsing {
         } else if input.peek(syn::Lit) {
             input.parse().map(Expr::Lit)
         } else if input.peek(syn::Token![async])
-            && (input.peek2(syn::token::Brace) || input.peek2(syn::Token![move]) && input.peek3(syn::token::Brace))
+            && (input.peek2(syn::token::Brace)
+                || input.peek2(syn::Token![move]) && input.peek3(syn::token::Brace))
         {
             input.call(expr_async).map(Expr::Async)
         } else if input.peek(syn::Token![try]) && input.peek2(syn::token::Brace) {
             input.call(expr_try_block).map(Expr::TryBlock)
         } else if input.peek(syn::Token![|])
-            || input.peek(syn::Token![async]) && (input.peek2(syn::Token![|]) || input.peek2(syn::Token![move]))
+            || input.peek(syn::Token![async])
+                && (input.peek2(syn::Token![|]) || input.peek2(syn::Token![move]))
             || input.peek(syn::Token![static])
             || input.peek(syn::Token![move])
         {
             expr_closure(input, allow_struct).map(Expr::Closure)
         } else if input.peek(Ident)
-            || (
-                input.peek(syn::Token![::])
-                && !input.peek3(syn::token::Paren)
-               )
+            || (input.peek(syn::Token![::]) && !input.peek3(syn::token::Paren))
             || input.peek(syn::Token![<])
             || input.peek(syn::Token![self])
             || input.peek(syn::Token![Self])
@@ -1590,7 +1595,8 @@ pub mod parsing {
             for segment in &expr.path.segments {
                 match segment.arguments {
                     syn::PathArguments::None => {}
-                    syn::PathArguments::AngleBracketed(_) | syn::PathArguments::Parenthesized(_) => {
+                    syn::PathArguments::AngleBracketed(_)
+                    | syn::PathArguments::Parenthesized(_) => {
                         contains_arguments = true;
                     }
                 }
@@ -1735,11 +1741,9 @@ pub mod parsing {
         };
 
         if input.peek(syn::Token![.])
-        || input.peek(syn::Token![?])
-        || (
-            input.peek(syn::Token![::])
-            && input.peek3(syn::token::Paren)
-           ) {
+            || input.peek(syn::Token![?])
+            || (input.peek(syn::Token![::]) && input.peek3(syn::token::Paren))
+        {
             expr = trailer_helper(input, expr)?;
 
             attrs.extend(expr.replace_attrs(Vec::new()));
@@ -1799,7 +1803,10 @@ pub mod parsing {
                 input.parse::<Option<syn::Token![|]>>()?;
                 let value: syn::Pat = input.parse()?;
                 pats.push_value(value);
-                while input.peek(syn::Token![|]) && !input.peek(syn::Token![||]) && !input.peek(syn::Token![|=]) {
+                while input.peek(syn::Token![|])
+                    && !input.peek(syn::Token![||])
+                    && !input.peek(syn::Token![|=])
+                {
                     let punct = input.parse()?;
                     pats.push_punct(punct);
                     let value: syn::Pat = input.parse()?;
@@ -2348,7 +2355,7 @@ pub mod parsing {
 
     // modification of syn::path::parse_helper
     fn parse_helper(input: ParseStream, expr_style: bool) -> Result<syn::Path> {
-        if input.peek(syn::Token![dyn]) {
+        if input.peek(syn::Token![dyn ]) {
             return Err(input.error("expected path"));
         }
 
@@ -2358,8 +2365,7 @@ pub mod parsing {
                 let mut segments = syn::punctuated::Punctuated::new();
                 let value = syn::PathSegment::parse_helper(input, expr_style)?;
                 segments.push_value(value);
-                while input.peek(syn::Token![::])
-                    && !input.peek3(syn::token::Paren) {
+                while input.peek(syn::Token![::]) && !input.peek3(syn::token::Paren) {
                     let punct: syn::Token![::] = input.parse()?;
                     segments.push_punct(punct);
                     let value = syn::PathSegment::parse_helper(input, expr_style)?;
@@ -2383,7 +2389,6 @@ pub mod parsing {
             } else {
                 syn::path::parsing::qpath(input, true)?
             };
-
 
             Ok(ExprPath {
                 attrs: attrs,
@@ -2511,10 +2516,12 @@ pub mod parsing {
             || ahead.peek(syn::Token![crate]) && !ahead.peek2(syn::Token![::])
             || ahead.peek(syn::Token![extern]) && !ahead.peek2(syn::Token![::])
             || ahead.peek(syn::Token![use])
-            || ahead.peek(syn::Token![static]) && (ahead.peek2(syn::Token![mut]) || ahead.peek2(Ident))
+            || ahead.peek(syn::Token![static])
+                && (ahead.peek2(syn::Token![mut]) || ahead.peek2(Ident))
             || ahead.peek(syn::Token![const])
             || ahead.peek(syn::Token![unsafe]) && !ahead.peek2(syn::token::Brace)
-            || ahead.peek(syn::Token![async]) && (ahead.peek2(syn::Token![extern]) || ahead.peek2(syn::Token![fn]))
+            || ahead.peek(syn::Token![async])
+                && (ahead.peek2(syn::Token![extern]) || ahead.peek2(syn::Token![fn]))
             || ahead.peek(syn::Token![fn])
             || ahead.peek(syn::Token![mod])
             || ahead.peek(syn::Token![type])
@@ -2525,8 +2532,8 @@ pub mod parsing {
             || ahead.peek(syn::Token![auto]) && ahead.peek2(syn::Token![trait])
             || ahead.peek(syn::Token![trait])
             || ahead.peek(syn::Token![default])
-                && (ahead.peek2(syn::Token![unsafe]) || ahead.peek2(syn::Token![impl]))
-            || ahead.peek(syn::Token![impl])
+                && (ahead.peek2(syn::Token![unsafe]) || ahead.peek2(syn::Token![impl ]))
+            || ahead.peek(syn::Token![impl ])
             || ahead.peek(syn::Token![macro])
         {
             input.parse().map(Stmt::Item)
@@ -2566,7 +2573,10 @@ pub mod parsing {
                 let mut pats = Punctuated::new();
                 let value: Pat = input.parse()?;
                 pats.push_value(value);
-                while input.peek(syn::Token![|]) && !input.peek(syn::Token![||]) && !input.peek(syn::Token![|=]) {
+                while input.peek(syn::Token![|])
+                    && !input.peek(syn::Token![||])
+                    && !input.peek(syn::Token![|=])
+                {
                     let punct = input.parse()?;
                     pats.push_punct(punct);
                     let value: Pat = input.parse()?;
@@ -2686,7 +2696,8 @@ pub mod parsing {
             for segment in &path.segments {
                 match segment.arguments {
                     syn::PathArguments::None => {}
-                    syn::PathArguments::AngleBracketed(_) | syn::PathArguments::Parenthesized(_) => {
+                    syn::PathArguments::AngleBracketed(_)
+                    | syn::PathArguments::Parenthesized(_) => {
                         contains_arguments = true;
                     }
                 }
@@ -2913,7 +2924,11 @@ pub mod parsing {
     */
 
     #[cfg(feature = "full")]
-    fn pat_range(input: ParseStream, qself: Option<syn::QSelf>, path: syn::Path) -> Result<PatRange> {
+    fn pat_range(
+        input: ParseStream,
+        qself: Option<syn::QSelf>,
+        path: syn::Path,
+    ) -> Result<PatRange> {
         Ok(PatRange {
             lo: Box::new(Expr::Path(ExprPath {
                 attrs: Vec::new(),
@@ -3274,7 +3289,10 @@ mod printing {
     }
 
     #[cfg(feature = "full")]
-    pub fn maybe_wrap_else(tokens: &mut TokenStream, else_: &Option<(syn::Token![else], Box<Expr>)>) {
+    pub fn maybe_wrap_else(
+        tokens: &mut TokenStream,
+        else_: &Option<(syn::Token![else], Box<Expr>)>,
+    ) {
         if let Some((ref else_token, ref else_)) = *else_ {
             else_token.to_tokens(tokens);
 

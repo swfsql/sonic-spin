@@ -1,4 +1,4 @@
-use crate::resyn::expr::{Block, Expr, Arm, parsing, ExprTurboball};
+use crate::resyn::expr::{parsing, Arm, Block, Expr, ExprTurboball};
 use syn::punctuated::Punctuated;
 
 pub mod mark;
@@ -6,7 +6,7 @@ pub mod post_mark;
 
 pub use mark::ExprMark;
 pub use post_mark::PostExprMark;
-use syn::parse::{Result, ParseBuffer};
+use syn::parse::{ParseBuffer, Result};
 
 pub fn parse_turboball(input: &ParseBuffer, e: Expr) -> Result<Expr> {
     let colon2_token: syn::Token![::] = input.parse()?;
@@ -18,20 +18,20 @@ pub fn parse_turboball(input: &ParseBuffer, e: Expr) -> Result<Expr> {
         ExprMark::If(_) => {
             let mark: post_mark::If = input.parse()?;
             Some(PostExprMark::If(mark))
-        },
+        }
         ExprMark::While(_) => {
             let mark: post_mark::While = input.parse()?;
             Some(PostExprMark::While(mark))
-        },
+        }
         ExprMark::ForLoop(_) => {
             let mark: post_mark::ForLoop = input.parse()?;
             Some(PostExprMark::ForLoop(mark))
-        },
+        }
         ExprMark::Match(_) => {
             let mark: post_mark::Match = input.parse()?;
             Some(PostExprMark::Match(mark))
-        },
-        _ => None
+        }
+        _ => None,
     };
 
     Ok(Expr::Turboball(ExprTurboball {

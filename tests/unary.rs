@@ -5,45 +5,53 @@ mod common;
 use sonic_spin::sonic_spin;
 
 #[test]
-fn un_deref() { sonic_spin! {
-    let x = &5;
-    let alt = *x;
+fn un_deref() {
+    sonic_spin! {
+        let x = &5;
+        let alt = *x;
 
-    let res = x::(*);
+        let res = x::(*);
 
-    assert_eq!(res, 5);
-    assert_eq!(res, alt);
-}}
-
-#[test]
-fn un_not() { sonic_spin! {
-    let x = false;
-    let alt = !x;
-
-    let res = x::(!);
-
-    assert_eq!(res, true);
-    assert_eq!(res, alt);
-}}
+        assert_eq!(res, 5);
+        assert_eq!(res, alt);
+    }
+}
 
 #[test]
-fn un_minus() { sonic_spin! {
-    let x = 2;
-    let alt = -x;
+fn un_not() {
+    sonic_spin! {
+        let x = false;
+        let alt = !x;
 
-    let res = x::(-);
+        let res = x::(!);
 
-    assert_eq!(res, -2);
-    assert_eq!(res, alt);
-}}
+        assert_eq!(res, true);
+        assert_eq!(res, alt);
+    }
+}
 
 #[test]
-fn un_minus_deref() { sonic_spin! {
-    let x = &2;
-    let alt = -*x;
+fn un_minus() {
+    sonic_spin! {
+        let x = 2;
+        let alt = -x;
 
-    let res = x::(*)::(-);
+        let res = x::(-);
 
-    assert_eq!(res, -2);
-    assert_eq!(res, alt);
-}}
+        assert_eq!(res, -2);
+        assert_eq!(res, alt);
+    }
+}
+
+#[test]
+fn un_minus_deref() {
+    sonic_spin! {
+        let x = &2;
+        let alt = -*x;
+
+        let res = x::(*)::(-);
+
+        assert_eq!(res, -2);
+        assert_eq!(res, alt);
+    }
+}
