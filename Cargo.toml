@@ -18,6 +18,7 @@ proc-macro2 = { version = "0.4.4", default-features = false }
 quote = "0.6.11"
 
 [dependencies.syn]
+version = "=0.15.30"
 package = "syn-pub-items"
 features = ["full", "derive", "parsing", "clone-impls", "printing"]
 
