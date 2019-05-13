@@ -1,5 +1,6 @@
 #![feature(proc_macro_hygiene)]
 #![feature(external_doc)]
+#![doc(include = "../README.md")]
 
 extern crate proc_macro;
 extern crate proc_macro2;
@@ -8,6 +9,8 @@ mod resyn;
 use proc_macro::TokenStream;
 use quote::quote;
 
+/// Changes the `Block` parsing syntax so that the `::()` postfix
+/// serves as a general postfix operator.
 #[proc_macro]
 pub fn sonic_spin(item: TokenStream) -> TokenStream {
     let rebraced = {
