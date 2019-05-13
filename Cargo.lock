@@ -22,13 +22,13 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.15.30 (git+https://github.com/swfsql/syn.git?branch=pub-items)",
+ "syn-pub-items 0.15.30 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "syn"
+name = "syn-pub-items"
 version = "0.15.30"
-source = "git+https://github.com/swfsql/syn.git?branch=pub-items#f8cf358ff569537da039cbfd77ce7bbdba320a75"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -43,5 +43,5 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [metadata]
 "checksum proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)" = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
 "checksum quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)" = "faf4799c5d274f3868a4aae320a0a182cbd2baee377b378f080e16a23e9d80db"
-"checksum syn 0.15.30 (git+https://github.com/swfsql/syn.git?branch=pub-items)" = "<none>"
+"checksum syn-pub-items 0.15.30 (registry+https://github.com/rust-lang/crates.io-index)" = "761d54e4d9be9d97a270c29a6555283ed4165362fb3ae941acfad9fa6ba60975"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"

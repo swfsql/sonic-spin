@@ -14,14 +14,11 @@ documentation = "https://docs.rs/sonic_spin/0.1.0/sonic_spin/"
 proc-macro = true
 
 [dependencies]
-# syn = { version = "=0.15.30", features = ["full", "printing"] } 
 proc-macro2 = { version = "0.4.4", default-features = false }
 quote = "0.6.11"
 
-# [patch.crates-io.syn]
 [dependencies.syn]
-git = "https://github.com/swfsql/syn.git"
-branch = "pub-items" 
+package = "syn-pub-items"
 features = ["full", "derive", "parsing", "clone-impls", "printing"]
 
 [features]
